@@ -12,5 +12,6 @@ dependencies{
 	processor group: 'org.immutables', name: 'value', version: '2.2.6' 
 	compile('org.springframework.boot:spring-boot-starter-web:2.0.0.RELEASE')
 	compile("org.springframework.boot:spring-boot-starter-data-mongodb:2.0.0.RELEASE")
+	compile "io.reactivex.rxjava2:rxjava:2.0.0"
 }
 

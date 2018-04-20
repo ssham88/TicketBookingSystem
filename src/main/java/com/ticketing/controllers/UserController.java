@@ -17,6 +17,8 @@ import com.ticketing.domain.Seat;
 import com.ticketing.domain.Ticket;
 import com.ticketing.service.UserService;
 
+import io.reactivex.Observable;
+
 @RestController
 @RequestMapping(value="user")
 public class UserController {
@@ -24,15 +26,19 @@ public class UserController {
 	UserService userService;
 	
 	@RequestMapping(value="/getMovieDetails/{movieName}",method=RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
-	public MovieDetails getMovieDetails(@PathVariable String movieName){
+	public Observable<MovieDetails> getMovieDetails(@PathVariable String movieName){
 		return userService.getMovieDetails(movieName);
 	}
-	@RequestMapping(value="/getSeatDetails",method=RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
+	/*@RequestMapping(value="/getSeatDetails",method=RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
 	public List<Seat> getSeatDetails(){
+		return userService.getSeatDetails();
+	}*/
+	@RequestMapping(value="/getSeatDetails",method=RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
+	public Observable<List<Seat>> getSeatDetails(){
 		return userService.getSeatDetails();
 	}
 	@RequestMapping(value="/getMovie",method=RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
-	public List<Movie> getAllMovies(){
+	public Observable<List<Movie>> getAllMovies(){
 		return userService.getAllMovies();
 	}
 	@RequestMapping(value="/bookMovieTicket",method=RequestMethod.POST,consumes=MediaType.APPLICATION_JSON_VALUE)

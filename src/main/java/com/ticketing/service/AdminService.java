@@ -1,6 +1,11 @@
 package com.ticketing.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import com.ticketing.domain.Movie;
@@ -19,27 +24,30 @@ public class AdminService {
 	TheaterRepository theaterRepository;
 	@Autowired
 	SeatRepository seatRepository;
+	@Autowired
+	MongoTemplate mongoTemplate;
 	
-	public void setMovieDetails(MovieDetails movieDetails) {
+	public String setMovieDetails(MovieDetails movieDetails) {
 		movieDetails.getTheaterDetailsList().forEach(thDetails->{
 			Theater theater =  new Theater();
-			//theater.setTheaterId(thDetails.getTheaterId());
-			theater.setTheaterName(thDetails.getTheaterName());
+			theater.setTheaterId(thDetails.getTheaterName());
 			theater.setPrice(thDetails.getPrice());
 			theater.setLang(thDetails.getLang());
-			saveTheater(theater);
-			
-			Movie movie = new Movie();
-			movie.setMovieName(movieDetails.getMovieName());
-			movie.setThreaterId(theater.getTheaterId());
-			saveMovie(movie);
-			
-			thDetails.getSeatList().forEach(s->{
-				s.setTheaterId(theater.getTheaterId());
-				saveSeat(s);
-			});
-			
+			if(fetchTheater(thDetails.getTheaterName()).isEmpty()) {
+				saveTheater(theater);
+				
+				Movie movie = new Movie();
+				movie.setMovieName(movieDetails.getMovieName());
+				movie.setThreaterId(theater.getTheaterId());
+				saveMovie(movie);
+				
+				thDetails.getSeatList().forEach(s->{
+					s.setTheaterId(theater.getTheaterId());
+					saveSeat(s);
+				});
+			}
 		});
+		return "Movie successfully set in Theater.";
 	}
 	
 	public void saveMovie(Movie movie) {
@@ -52,5 +60,12 @@ public class AdminService {
 	
 	public void saveTheater(Theater theater) {
 		theaterRepository.save(theater);
+	}
+	
+	private List<Theater> fetchTheater(String theaterName) {
+		Query theaterQuery = new Query();
+		theaterQuery.addCriteria(Criteria.where("theaterId").is(theaterName));
+		return mongoTemplate.find(theaterQuery, Theater.class);
+
 	}
 }

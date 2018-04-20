@@ -7,7 +7,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Theater {
 	@Id
 	private String theaterId;
-	private String theaterName;
 	private String price;
 	private String lang;
 	public String getTheaterId() {
@@ -15,12 +14,6 @@ public class Theater {
 	}
 	public void setTheaterId(String theaterId) {
 		this.theaterId = theaterId;
-	}
-	public String getTheaterName() {
-		return theaterName;
-	}
-	public void setTheaterName(String theaterName) {
-		this.theaterName = theaterName;
 	}
 	public String getPrice() {
 		return price;

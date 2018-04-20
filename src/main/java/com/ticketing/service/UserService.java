@@ -23,6 +23,8 @@ import com.ticketing.repository.SeatRepository;
 import com.ticketing.repository.TheaterRepository;
 import com.ticketing.repository.UserRepository;
 
+import io.reactivex.Observable;
+
 @Service
 public class UserService {
 
@@ -39,46 +41,53 @@ public class UserService {
 
 	private List<TheaterDetails> theaterDetailsList = null;
 
-	public List<Movie> getAllMovies() {
-		return movieRepository.findAll();
+	public Observable<List<Movie>> getAllMovies() {
+		return Observable.just(movieRepository.findAll());
 	}
 
-	public MovieDetails getMovieDetails(String movieName) {
-
-		Query movieQuery = null;
-		Query theaterQuery = null;
-		List<Movie> moviesList = null;
-		List<String> theaterIdList = null;
-		List<Theater> thList = null;
+	public Observable<MovieDetails> getMovieDetails(String movieName) {
 		MovieDetails movieDetails = new MovieDetails();
+		return Observable.just(movieDetails).map(details->{
+			Query movieQuery = null;
+			Query theaterQuery = null;
+			List<Movie> moviesList = null;
+			List<String> theaterIdList = null;
+			List<Theater> thList = null;
+			
 
-		movieQuery = new Query();
-		movieQuery.addCriteria(Criteria.where("movieName").is(movieName));
-		moviesList = mongoTemplate.find(movieQuery, Movie.class);
+			movieQuery = new Query();
+			movieQuery.addCriteria(Criteria.where("movieName").is(movieName));
+			moviesList = mongoTemplate.find(movieQuery, Movie.class);
 
-		theaterIdList = moviesList.stream().map(m -> m.getThreaterId()).collect(Collectors.toList());
-		theaterQuery = new Query();
-		theaterQuery.addCriteria(Criteria.where("theaterId").in(theaterIdList));
-		thList = mongoTemplate.find(theaterQuery, Theater.class);
+			theaterIdList = moviesList.stream().map(m -> m.getThreaterId()).collect(Collectors.toList());
+			theaterQuery = new Query();
+			theaterQuery.addCriteria(Criteria.where("theaterId").in(theaterIdList));
+			thList = mongoTemplate.find(theaterQuery, Theater.class);
 
-		theaterDetailsList = new ArrayList<>();
+			theaterDetailsList = new ArrayList<>();
 
-		thList.forEach(th -> {
-			TheaterDetails theaterDetails = new TheaterDetails();
-			theaterDetails.setTheaterName(th.getTheaterName());
-			theaterDetails.setPrice(th.getPrice());
-			theaterDetails.setLang(th.getLang());
-			theaterDetails.setSeatList(getSeatList(th));
-			theaterDetailsList.add(theaterDetails);
+			thList.forEach(th -> {
+				TheaterDetails theaterDetails = new TheaterDetails();
+				theaterDetails.setTheaterName(th.getTheaterId());
+				theaterDetails.setPrice(th.getPrice());
+				theaterDetails.setLang(th.getLang());
+				theaterDetails.setSeatList(getSeatList(th));
+				theaterDetailsList.add(theaterDetails);
+			});
+
+			movieDetails.setMovieName(movieName);
+			movieDetails.setTheaterDetailsList(theaterDetailsList);
+			return movieDetails;
 		});
-
-		movieDetails.setMovieName(movieName);
-		movieDetails.setTheaterDetailsList(theaterDetailsList);
-		return movieDetails;
+		
 	}
 
-	public List<Seat> getSeatDetails() {
+	/*public List<Seat> getSeatDetails() {
 		return seatRepository.findAll();
+	}*/
+	
+	public Observable<List<Seat>> getSeatDetails() {
+		return Observable.just(seatRepository.findAll());
 	}
 
 	public String bookMovieTicket(Ticket ticket) {
@@ -131,7 +140,7 @@ public class UserService {
 	private Theater getTheater(String theaterName) {
 		Query theaterQuery = null;
 		theaterQuery = new Query();
-		theaterQuery.addCriteria(Criteria.where("theaterName").is(theaterName));
+		theaterQuery.addCriteria(Criteria.where("theaterId").is(theaterName));
 		return mongoTemplate.find(theaterQuery, Theater.class).get(0);
 	}
 

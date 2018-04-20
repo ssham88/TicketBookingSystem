@@ -17,8 +17,8 @@ public class AdminController {
 	AdminService adminService;
 	
 	@RequestMapping(value="/setMovieDetails",method=RequestMethod.POST,consumes=MediaType.APPLICATION_JSON_VALUE)
-	public void setTheater(@RequestBody MovieDetails movieDetails){
-		adminService.setMovieDetails(movieDetails);
+	public String setTheater(@RequestBody MovieDetails movieDetails){
+		return adminService.setMovieDetails(movieDetails);
 	}
 	
 	/*@RequestMapping(value="/saveMovie",method=RequestMethod.POST,consumes=MediaType.APPLICATION_JSON_VALUE)
