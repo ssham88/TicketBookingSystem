@@ -24,6 +24,7 @@ import com.ticketing.repository.TheaterRepository;
 import com.ticketing.repository.UserRepository;
 
 import io.reactivex.Observable;
+import io.reactivex.functions.Function;
 
 @Service
 public class UserService {
@@ -41,8 +42,15 @@ public class UserService {
 
 	private List<TheaterDetails> theaterDetailsList = null;
 
-	public Observable<List<Movie>> getAllMovies() {
-		return Observable.just(movieRepository.findAll());
+	public Observable<Movie> getAllMovies() {
+		/*return Observable.just(movieRepository.findAll())
+        .flatMap(new Function<List<Movie>, Observable<Movie>>() {
+            @Override
+            public Observable<Movie> apply(List<Movie> movieList) {
+                return Observable.fromIterable(movieList);
+            }
+        });*/
+		return Observable.fromIterable(movieRepository.findAll());
 	}
 
 	public Observable<MovieDetails> getMovieDetails(String movieName) {
@@ -71,7 +79,7 @@ public class UserService {
 				theaterDetails.setTheaterName(th.getTheaterId());
 				theaterDetails.setPrice(th.getPrice());
 				theaterDetails.setLang(th.getLang());
-				theaterDetails.setSeatList(getSeatList(th));
+				theaterDetails.setSeatList(getSeatList(th).toList().blockingGet());
 				theaterDetailsList.add(theaterDetails);
 			});
 
@@ -86,8 +94,16 @@ public class UserService {
 		return seatRepository.findAll();
 	}*/
 	
-	public Observable<List<Seat>> getSeatDetails() {
-		return Observable.just(seatRepository.findAll());
+	public Observable<Seat> getSeatDetails() {
+		return Observable.just(seatRepository.findAll())
+				.flatMap(new Function<List<Seat>,Observable<Seat>>(){
+
+					@Override
+					public Observable<Seat> apply(List<Seat> seatList) throws Exception {
+						return Observable.fromIterable(seatList);
+					}
+					
+				});
 	}
 
 	public String bookMovieTicket(Ticket ticket) {
@@ -98,8 +114,8 @@ public class UserService {
 		if (fetchUser(ticket.getUserName()).equals(Observable.empty())) {
 			return "Please register before booking Ticket.";
 		}
-		theater = getTheater(ticket.getTheaterName());
-		seat= getSeatList(theater).stream().filter(s -> ticket.getSeatNum().equals(s.getSeatNum())).findFirst().get();
+		theater = getTheater(ticket.getTheaterName()).blockingSingle();
+		seat= getSeatList(theater).filter(s -> ticket.getSeatNum().equals(s.getSeatNum())).blockingFirst();
 		if (seat.getAvailability().equalsIgnoreCase("Y")) {
 			updateSeat(seat, "N", ticket.getUserName());
 			result = "Seat booked!!";
@@ -109,12 +125,12 @@ public class UserService {
 		return result;
 	}
 
-	private Observable<List<ImmutableUser>> fetchUser(String userName) {
-		List<ImmutableUser> immutableUserList = new ArrayList<>();
+	private Observable<ImmutableUser> fetchUser(String userName) {
+		List<ImmutableUser> immutableUserList = null;
 		Query userQuery = new Query();
 		userQuery.addCriteria(Criteria.where("name").is(userName));
 		immutableUserList = mongoTemplate.find(userQuery, ImmutableUser.class);
-		return (immutableUserList.isEmpty()? Observable.empty() : Observable.just(immutableUserList));
+		return immutableUserList.isEmpty() ? Observable.empty() : Observable.fromIterable(immutableUserList);
 	}
 
 	private void updateSeat(Seat seat, String avail, String user) {
@@ -127,18 +143,26 @@ public class UserService {
 		mongoTemplate.upsert(query, update, Seat.class);
 	}
 
-	private List<Seat> getSeatList(Theater th) {
+	private Observable<Seat> getSeatList(Theater th) {
 		Query seatQuery = null;
 		seatQuery = new Query();
 		seatQuery.addCriteria(Criteria.where("theaterId").is(th.getTheaterId()));
-		return mongoTemplate.find(seatQuery, Seat.class);
+		return Observable.just(mongoTemplate.find(seatQuery, Seat.class))
+				.flatMap(new Function<List<Seat>,Observable<Seat>>(){
+
+					@Override
+					public Observable<Seat> apply(List<Seat> seatList) throws Exception {
+						return Observable.fromIterable(seatList);
+					}
+					
+				});
 	}
 
-	private Theater getTheater(String theaterName) {
+	private Observable<Theater> getTheater(String theaterName) {
 		Query theaterQuery = null;
 		theaterQuery = new Query();
 		theaterQuery.addCriteria(Criteria.where("theaterId").is(theaterName));
-		return mongoTemplate.find(theaterQuery, Theater.class).get(0);
+		return Observable.fromIterable(mongoTemplate.find(theaterQuery, Theater.class));
 	}
 
 	public String cancelMovieTicket(Ticket ticket) {
@@ -149,8 +173,8 @@ public class UserService {
 			return "Please register before cancelling Ticket.";
 		}
 
-		theater = getTheater(ticket.getTheaterName());
-		seat = getSeatList(theater).stream().filter(s -> ticket.getSeatNum().equals(s.getSeatNum())).findFirst().get();
+		theater = getTheater(ticket.getTheaterName()).blockingFirst();
+		seat = getSeatList(theater).filter(s -> ticket.getSeatNum().equals(s.getSeatNum())).blockingFirst();
 		if (!seat.getUserName().equalsIgnoreCase(ticket.getUserName())) {
 			return "Not Authorized to cancel this Ticket!!";
 		}

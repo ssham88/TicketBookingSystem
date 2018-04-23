@@ -18,6 +18,7 @@ import com.ticketing.domain.Ticket;
 import com.ticketing.service.UserService;
 
 import io.reactivex.Observable;
+import io.reactivex.Single;
 
 @RestController
 @RequestMapping(value="user")
@@ -34,12 +35,12 @@ public class UserController {
 		return userService.getSeatDetails();
 	}*/
 	@RequestMapping(value="/getSeatDetails",method=RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
-	public Observable<List<Seat>> getSeatDetails(){
-		return userService.getSeatDetails();
+	public Single<List<Seat>> getSeatDetails(){
+		return userService.getSeatDetails().toList();
 	}
 	@RequestMapping(value="/getMovie",method=RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
-	public Observable<List<Movie>> getAllMovies(){
-		return userService.getAllMovies();
+	public Single<List<Movie>> getAllMovies(){
+		return userService.getAllMovies().toList();
 	}
 	@RequestMapping(value="/bookMovieTicket",method=RequestMethod.POST,consumes=MediaType.APPLICATION_JSON_VALUE)
 	public String bookMovieTicket(@RequestBody Ticket ticket){
