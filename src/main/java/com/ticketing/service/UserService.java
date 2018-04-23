@@ -94,15 +94,12 @@ public class UserService {
 		Theater theater = null;
 		Seat seat = null;
 		String result;
-		List<ImmutableUser> immutableUser = null;
 
-		immutableUser = fetchUser(ticket.getUserName());
-		if (immutableUser.isEmpty()) {
+		if (fetchUser(ticket.getUserName()).equals(Observable.empty())) {
 			return "Please register before booking Ticket.";
 		}
 		theater = getTheater(ticket.getTheaterName());
-		seat = getSeatList(theater).stream().filter(s -> ticket.getSeatNum().equals(s.getSeatNum())).findFirst().get();
-
+		seat= getSeatList(theater).stream().filter(s -> ticket.getSeatNum().equals(s.getSeatNum())).findFirst().get();
 		if (seat.getAvailability().equalsIgnoreCase("Y")) {
 			updateSeat(seat, "N", ticket.getUserName());
 			result = "Seat booked!!";
@@ -112,11 +109,12 @@ public class UserService {
 		return result;
 	}
 
-	private List<ImmutableUser> fetchUser(String userName) {
+	private Observable<List<ImmutableUser>> fetchUser(String userName) {
+		List<ImmutableUser> immutableUserList = new ArrayList<>();
 		Query userQuery = new Query();
 		userQuery.addCriteria(Criteria.where("name").is(userName));
-		return mongoTemplate.find(userQuery, ImmutableUser.class);
-
+		immutableUserList = mongoTemplate.find(userQuery, ImmutableUser.class);
+		return (immutableUserList.isEmpty()? Observable.empty() : Observable.just(immutableUserList));
 	}
 
 	private void updateSeat(Seat seat, String avail, String user) {
@@ -133,8 +131,7 @@ public class UserService {
 		Query seatQuery = null;
 		seatQuery = new Query();
 		seatQuery.addCriteria(Criteria.where("theaterId").is(th.getTheaterId()));
-		List<Seat> seatList = mongoTemplate.find(seatQuery, Seat.class);
-		return seatList;
+		return mongoTemplate.find(seatQuery, Seat.class);
 	}
 
 	private Theater getTheater(String theaterName) {
@@ -148,10 +145,7 @@ public class UserService {
 		Theater theater = null;
 		Seat seat = null;
 		String result;
-		List<ImmutableUser> immutableUser = null;
-
-		immutableUser = fetchUser(ticket.getUserName());
-		if (immutableUser.isEmpty()) {
+		if (fetchUser(ticket.getUserName()).equals(Observable.empty())) {
 			return "Please register before cancelling Ticket.";
 		}
 
@@ -170,7 +164,7 @@ public class UserService {
 	}
 
 	public String registerUser(ImmutableUser user) {
-		if (!fetchUser(user.getName()).isEmpty()) {
+		if (!fetchUser(user.getName()).equals(Observable.empty())) {
 			return "Please choose another name.";
 		} else {
 			userRepository.save(user);
@@ -180,7 +174,7 @@ public class UserService {
 
 	public String unRegister(ImmutableUser user) {
 		Query seatQuery = null;
-		if (fetchUser(user.getName()).isEmpty()) {
+		if (fetchUser(user.getName()).equals(Observable.empty())) {
 			return "User is not registered!!";
 		} else {
 			seatQuery = new Query();
